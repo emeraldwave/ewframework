@@ -1,6 +1,6 @@
 platform.apiLevel = "2.3"
 
-local app = {VERSION = "2022.08.17.1023", TITLE = "Skills Module", COPYRIGHT = "2021"}
+local app = {VERSION = "2022.08.17.1034", TITLE = "Skills Module", COPYRIGHT = "2022"}
 
 print("Version = "..app.VERSION)
 
