@@ -1,6 +1,6 @@
 platform.apiLevel = "2.3"
 
-local app = {VERSION = "2023.02.21.2046", TITLE = "Emerald Wave Multi-Page Module", COPYRIGHT = "2023"}
+local app = {VERSION = "2023.04.12.1921", TITLE = "Emerald Wave Multi-Page Module", COPYRIGHT = "2023"}
 
 print("Version = "..app.VERSION)
 
