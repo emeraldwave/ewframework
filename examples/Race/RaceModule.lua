@@ -1,6 +1,6 @@
 platform.apiLevel = "2.3"
 
-local app = {VERSION = "2023.02.21.2047", TITLE = "Emerald Wave Race Module", COPYRIGHT = "2023"}
+local app = {VERSION = "2023.04.12.1925", TITLE = "Emerald Wave Race Module", COPYRIGHT = "2023"}
 
 print("Version = "..app.VERSION)
 
@@ -3192,7 +3192,7 @@ function Expressions:simplifyMultiplicationExp(s)
     return s
 end
 
---##FRAMEWORK - Emerald Wave - 2023.02.21
+--##FRAMEWORK - Emerald Wave - 2023.04.12
 -----------------------------------------------------------------
 
 DefaultModel = class()
@@ -4538,14 +4538,14 @@ function PageView:positionElements(pane, xPositions, yPositions)
 end
 
 --Anchors, calculates the percents and positions the elements.
-function PageView:anchorAndPositionXY(view, pane, anchorDataX, anchorDataY)
+function PageView:anchorAndPositionXY(pane, anchorDataX, anchorDataY)
     local scaleFactor = pane.innerScaleFactor1
     local panew = pane.innerWidth1Centered
     local vh = pane.virtualHeight
     
     local xPositions = self:anchorObjectsX(anchorDataX, scaleFactor, panew)
 
-    local yPositions, vh = self:anchorObjectsY(view, anchorDataY, scaleFactor, vh)
+    local yPositions, vh = self:anchorObjectsY(anchorDataY, scaleFactor, vh)
 
     self:calculateLayoutPercentsXY(pane, xPositions, yPositions, scaleFactor, panew, vh)
 
@@ -4564,12 +4564,12 @@ function PageView:anchorAndPositionX(pane, anchorDataX)
     self:positionElements(pane, xPositions, yPositions, scaleFactor, panew, vh)
 end
 
-function PageView:anchorAndPositionY(view, pane, anchorDataY)
+function PageView:anchorAndPositionY(pane, anchorDataY)
     local scaleFactor = pane.innerScaleFactor1
     local vh1 = pane.virtualHeight
     local panew = pane.innerWidth1Centered
 
-    local yPositions, vh2 = self:anchorObjectsY(view, anchorDataY, scaleFactor, vh1)
+    local yPositions, vh2 = self:anchorObjectsY(anchorDataY, scaleFactor, vh1)
 
     --Use the original virtual height (vh1) to first layout the selected elements.
     self:calculateLayoutPercentsY(pane, yPositions, scaleFactor, vh1)
@@ -4766,7 +4766,7 @@ end
 --anchorData must be in order from top to bottom.  Any objects that are dependent on the pane height must be placed in the table
 --after all the non-dependent objects.  Any object placement that goes beyond the initial vh will cause the remainder of the calculations
 --to use the newly calculated vh.
-function PageView:anchorObjectsY( view, anchorData, scaleFactor, vh )
+function PageView:anchorObjectsY(anchorData, scaleFactor, vh )
     local y = 0
     local pcty
     local vh1 = vh
@@ -4886,12 +4886,12 @@ function PageView:layoutScrollPane(view, w, h)
     if view.getMaxVirtualHeight then
         vh1 = view:getMaxVirtualHeight()
     else
-        yPositions, vh1 = self:anchorObjectsY(view, anchorDataY, 1, app.HANDHELD_HEIGHT - app.frame.initHeaderHeight - app.frame.initFooterHeight)
+        yPositions, vh1 = self:anchorObjectsY(anchorDataY, 1, app.HANDHELD_HEIGHT - app.frame.initHeaderHeight - app.frame.initFooterHeight)
         vh1 = self:addVhWhiteSpace(view, vh1)
     end
     
     if view.numberOfColumns == 2 then
-        yPositions2, vh2 = self:anchorObjectsY(view, anchorDataYCol2, 1, app.HANDHELD_HEIGHT - app.frame.initHeaderHeight - app.frame.initFooterHeight)
+        yPositions2, vh2 = self:anchorObjectsY(anchorDataYCol2, 1, app.HANDHELD_HEIGHT - app.frame.initHeaderHeight - app.frame.initFooterHeight)
         vh2 = self:addVhWhiteSpace(view, vh2)
     end
     
@@ -4904,11 +4904,11 @@ function PageView:layoutScrollPane(view, w, h)
     view.scrollPane:setInnerScaleFactor(sf)   --If sf==nil, then this call will use the vh to calculate the inner scale factor.
 
      --Recalculate the virtualHeight now that we have a different scale factor and set the vertical positions of each object.  Don't size and position the scroll pane objects now, since that will be done by resizeWidgets()
-    yPositions, vh1 = self:anchorObjectsY(view, anchorDataY, view.scrollPane.innerScaleFactor1, view.scrollPane.h)
+    yPositions, vh1 = self:anchorObjectsY(anchorDataY, view.scrollPane.innerScaleFactor1, view.scrollPane.h)
     vh1 = self:addVhWhiteSpace(view, vh1)
 
     if view.numberOfColumns == 2 then
-        yPositions2, vh2 = self:anchorObjectsY(view, anchorDataYCol2, view.scrollPane.innerScaleFactor2, view.scrollPane.h)
+        yPositions2, vh2 = self:anchorObjectsY(anchorDataYCol2, view.scrollPane.innerScaleFactor2, view.scrollPane.h)
         vh2 = self:addVhWhiteSpace(view, vh2)
     end
     vh = math.max(vh1, vh2)
@@ -4963,7 +4963,7 @@ function PageView:layoutFooterPane(view)
         anchorDataX, anchorDataY = view:layoutFooter()
     
         xPositions = self:anchorObjectsX(anchorDataX, view.scaleFactor, app.frame.footer.w)
-        yPositions, vh1 = self:anchorObjectsY(view, anchorDataY, view.scaleFactor, app.frame.footer.h)
+        yPositions, vh1 = self:anchorObjectsY(anchorDataY, view.scaleFactor, app.frame.footer.h)
         
         self:calculateLayoutPercentsXY(app.frame.footer, xPositions, yPositions, view.scaleFactor, app.frame.footer.w, vh1)
   
