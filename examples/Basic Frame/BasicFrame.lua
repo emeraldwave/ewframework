@@ -1,6 +1,6 @@
 platform.apiLevel = "2.3"
 
-local app = {VERSION = "2023.04.12.1653", TITLE = "Emerald Wave Basic Frame", COPYRIGHT = "2023"}
+local app = {VERSION = "2023.07.26.0921", TITLE = "Emerald Wave Basic Frame", COPYRIGHT = "2023"}
 
 print("Version = "..app.VERSION)
 
@@ -2678,7 +2678,10 @@ app.configure = function( externalData )
   app.frame = Frame()
 end
 
-app.setAppConstants = function() 
+app.setAppConstants = function()
+    if not _R then _R = {} end
+    if not _R.IMG then _R.IMG = {} end
+    
     app.HANDHELD_WIDTH = 318
     app.HANDHELD_HEIGHT = 212
   
@@ -5430,7 +5433,7 @@ function Image:init( name )
 end
 
 function Image:paint( gc )
-    if self.visible == true then
+    if self.image and self.visible == true then
         gc:drawImage( self.image, self.x, self.y - self.scrollY )
         
         if self.boundingRectangle then self:paintBoundingRectangle( gc ) end
@@ -5446,97 +5449,127 @@ end
 function Image:setInitSizeAndPosition(w, h, pctx, pcty)
   Widget.setInitSizeAndPosition(self, w, h, pctx, pcty)
     
-  self.image = self.image:copy( self.nonScaledWidth, self.nonScaledHeight )
+  if self.image then
+    self.image = self.image:copy( self.nonScaledWidth, self.nonScaledHeight )
+  end
 end
 
 function Image:setSize(w, h)
-  Widget.setSize(self, w, h)
-  assert(self.image, "Image is nil: "..tostring(self.name))
+  if self.image then 
+    Widget.setSize(self, w, h)
   
-  self.image = self.image:copy( self.w, self.h )
+    self.image = self.image:copy( self.w, self.h ) 
+  end
 end
 
 function Image:loadImage( resourceImage )
-    self.image = image.new( resourceImage )
-    assert(self.image, "Image is nil: "..tostring(self.name).." with resourceImage: "..tostring(resourceImage))
-    
-    self.initWidth = self.image:width()
-    self.initHeight = self.image:height()
+    if not resourceImage then
+        print( "ResourceImage is nil: ".. self.name .. ". Continuing to load module without image." )
+        self.image = nil -- set the image to nil.
+
+        return false
+    else -- the resource image exists
+        self.image = image.new( resourceImage )
+
+        self.initWidth = self.image:width()
+        self.initHeight = self.image:height()
+
+        return true
+    end
 end
 
 function Image:rotate( angle )
-    if not angle then angle = 0 end
+    if self.image then
+        if not angle then angle = 0 end
     
-    self.rotation = self.rotation + angle   
-    self.image = self.image:rotate( angle )
+        self.rotation = self.rotation + angle   
     
-    self:setSize( self.image:width() / self.scaleFactor, self.image:height() / self.scaleFactor )
+        self.image = self.image:rotate( angle )
     
+        self:setSize( self.image:width() / self.scaleFactor, self.image:height() / self.scaleFactor )
+    end
 end
 
 function Image:calculateBoundingBox( scaleFactor )
-    local rectangleWidth = self.initWidth * scaleFactor
-    local rectangleHeight = self.initHeight * scaleFactor
-    local newHeightUp = 0
-    local newHeightLow = 0
-    local newWidthLeft = 0
-    local newWidthRight = 0
-    local outerWidth = 0
-    local outerHeight = 0
+    if not self.image then
+        return 0, 0
+    else
+        local rectangleWidth = self.initWidth * scaleFactor
+        local rectangleHeight = self.initHeight * scaleFactor
+        local newHeightUp = 0
+        local newHeightLow = 0
+        local newWidthLeft = 0
+        local newWidthRight = 0
+        local outerWidth = 0
+        local outerHeight = 0
+        
+        newWidthLeft = rectangleWidth * math.abs( math.cos( math.rad( self.rotation )))
+        newHeightLow = rectangleWidth * math.abs( math.sin( math.rad( self.rotation )))
+        newHeightUp = rectangleHeight * math.abs( math.cos( math.rad( self.rotation )))
+        newWidthRight = rectangleHeight * math.abs( math.sin( math.rad( self.rotation )))
+        
+        outerWidth = math.floor( newWidthLeft + newWidthRight )
+        outerHeight = math.floor( newHeightUp + newHeightLow )
+        
+        return outerWidth, outerHeight
+    end
     
-    newWidthLeft = rectangleWidth * math.abs( math.cos( math.rad( self.rotation )))
-    newHeightLow = rectangleWidth * math.abs( math.sin( math.rad( self.rotation )))
-    newHeightUp = rectangleHeight * math.abs( math.cos( math.rad( self.rotation )))
-    newWidthRight = rectangleHeight * math.abs( math.sin( math.rad( self.rotation )))
-    
-    outerWidth = math.floor( newWidthLeft + newWidthRight )
-    outerHeight = math.floor( newHeightUp + newHeightLow )
-    
-    return outerWidth, outerHeight
 end
 
 function Image:calculateWidth( scaleFactor )
-    local width, height = self:calculateBoundingBox( scaleFactor )
+    if self.image then
+        local width, height = self:calculateBoundingBox( scaleFactor )
 
-    return width
+        return width
+    else
+        return 0
+    end
 end
 
 function Image:calculateHeight( scaleFactor )
-    local width, height = self:calculateBoundingBox( scaleFactor )
+    if self.image then
+        local width, height = self:calculateBoundingBox( scaleFactor )
     
-    return height
+        return height
+    else
+        return 0
+    end
 end
 
 -- set rotation of image to user-specific value
 function Image:rotateFromZeroDeg( rotation )
-    if not rotation then rotation = 0 end
+    if self.image then
+        if not rotation then rotation = 0 end
     
-    if self.imageRotations and self.imageRotations[ tostring( rotation )] then
-        local imageDetails = self.imageRotations[ tostring( rotation )]
+        if self.imageRotations and self.imageRotations[ tostring( rotation )] then
+            local imageDetails = self.imageRotations[ tostring( rotation )]
+            
+            self.rotation = rotation -- set rotation to user value
+            self.image = imageDetails.image;
+            self.image = self.image:copy( imageDetails.width * self.scaleFactor, imageDetails.height * self.scaleFactor )
+            
+        else
+            self.image = self.image:rotate( self.rotation * -1 ) -- rotate the image back to 0 position
         
-        self.rotation = rotation -- set rotation to user value
-        self.image = imageDetails.image;
-        self.image = self.image:copy( imageDetails.width * self.scaleFactor, imageDetails.height * self.scaleFactor )
+            self.rotation = rotation -- set rotation to user value
+            self.image = self.image:rotate( self.rotation ) -- rotate image to user value
+        end
         
-    else
-        self.image = self.image:rotate( self.rotation * -1 ) -- rotate the image back to 0 position
-    
-        self.rotation = rotation -- set rotation to user value
-        self.image = self.image:rotate( self.rotation ) -- rotate image to user value
+        self:setSize( self.image:width() / self.scaleFactor, self.image:height() / self.scaleFactor )
     end
-    
-    self:setSize( self.image:width() / self.scaleFactor, self.image:height() / self.scaleFactor )
 end
 
 function Image:addRotationImages( tblResourceImages )
-    self.imageRotations = {} -- add a table that will contain rotation images
+    if self.image then
+        self.imageRotations = {} -- add a table that will contain rotation images
     
-    for i, v in pairs( tblResourceImages ) do
-        self.imageRotations[ i ] = {
-            [ "image" ] = app.model.imageResources:loadImageResource( v.image ),
-            [ "width" ] = v.width,
-            [ "height" ] = v.height
-        }
+        for i, v in pairs( tblResourceImages ) do
+            self.imageRotations[ i ] = {
+                [ "image" ] = app.model.imageResources:loadImageResource( v.image ),
+                [ "width" ] = v.width,
+                [ "height" ] = v.height
+            }
+        end
     end
 end
 
@@ -12360,9 +12393,12 @@ function Keyboard:init(name)
     self.copyPasteToolbar = CopyPasteToolbar(self.name.."CopyPasteToolbar")
     self.textbox = nil
     
-    assert(_R.IMG.clipboardicon, "clipboardImage does not exist.")
-    self.clipboardImage = image.new( _R.IMG.clipboardicon )
-    self.clipboardImage = self.clipboardImage:copy( 20, 20 )
+    if _R and _R.IMG and _R.IMG.clipboardicon then 
+        self.clipboardImage = image.new( _R.IMG.clipboardicon )
+        self.clipboardImage = self.clipboardImage:copy( 20, 20 )
+    else
+        print( "ResourceImage is nil: clipboardImage. Continuing to load module without image." )
+    end
 end
 
 --x,y is the pane location.  self.x and self.y are offset within the pane.
@@ -12403,7 +12439,7 @@ function Keyboard:setSize(w, h)
 
     self.roundedRectangle:setSize(self.w/self.scaleFactor, self.h/self.scaleFactor)
     self.controlRoundedRectangle:setSize( self.btnContainerInitWidth, self.btnContainerInitHeight )
-    self.clipboardImage = self.clipboardImage:copy( 20 * self.scaleFactor, 20 * self.scaleFactor )
+    if self.clipboardImage then self.clipboardImage = self.clipboardImage:copy( 20 * self.scaleFactor, 20 * self.scaleFactor ) end
     self:setButtonPanes()
     self.copyPasteToolbar:setSize( self.copyPasteToolbar.nonScaledWidth, self.copyPasteToolbar.nonScaledHeight )
 end
@@ -12475,7 +12511,7 @@ function Keyboard:setKeyboardLayout(keysLayout)
             self[button]:setInitSizeAndPosition(v[4], v[5], v[2]+.01, v[3]+self.spacing)
             self[button].label = v[1]
             
-            if v[1] == "clipboardIcon" then
+            if v[1] == "clipboardIcon" and self.clipboardImage then
                 self[button]:setDrawCallback( function( gc, x, y, w, h, sf )
                     gc:drawImage( self.clipboardImage, x + w * 0.5 - self.clipboardImage:width() * 0.5  - 1 * sf, y + h * 0.5 - self.clipboardImage:height() * 0.5 - 1 * sf )
                 end )
